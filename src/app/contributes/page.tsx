@@ -1,0 +1,12 @@
+"use client"
+import React from 'react'
+
+const ContributesPage = () => {
+  return (
+    <div className="p-6 space-y-6 h-screen overflow-y-auto">
+      <h1 className="text-2xl font-bold">Contributes</h1>
+    </div>
+  )
+}
+
+export default ContributesPage
