@@ -222,9 +222,7 @@ const SpeciesPage = () => {
           Card View
         </Button>
         <Button className="bg-green-500">
-          <Link href={`/plants/species/add`}>
-            Add New Specie
-          </Link>
+          <Link href={`/plants/species/add`}>Add New Specie</Link>
         </Button>
         {selectedIds.length > 0 && (
           <>
@@ -306,15 +304,20 @@ const SpeciesPage = () => {
               key={plant._id}
               className="border rounded-lg overflow-hidden shadow-sm bg-white"
             >
-              <CldImage
-                src={plant.image}
-                alt={plant.scientific_name}
-                width={400}
-                height={160}
-                crop="fill"
-                gravity="auto"
-                className="w-full h-40 object-cover"
-              />
+              {plant.image ? (
+                <CldImage
+                  src={plant.image}
+                  alt={plant.scientific_name}
+                  width={400}
+                  height={160}
+                  crop="fill"
+                  gravity="auto"
+                  className="w-full h-40 object-cover"
+                />
+              ) : (
+                <div className="w-[400px] h-[160px] bg-gray-400"/>
+              )}
+
               <div className="p-4 space-y-1">
                 <div className="font-bold">{plant.scientific_name}</div>
                 <div className="text-sm text-muted-foreground line-clamp-2">
