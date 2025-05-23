@@ -482,7 +482,7 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
                   <Input
                     placeholder="Section Name"
                     {...register(`species_description.${sectionIndex}.section`)}
-                    className="mb-2"
+                    className="mb-2 font-bold"
                   />
                 )}
 
@@ -500,11 +500,11 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
                       {isPredefined ? (
                         <Input
                           disabled
-                          className="bg-muted"
+                          className="bg-muted font-semibold"
                           {...register(labelPath)}
                         />
                       ) : (
-                        <Input placeholder="Label" {...register(labelPath)} />
+                        <Input placeholder="Label" {...register(labelPath)} className="font-semibold"/>
                       )}
                       <Textarea
                         placeholder="Content"
