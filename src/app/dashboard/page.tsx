@@ -14,6 +14,7 @@ import { fetchContributeList } from "@/services/contribute.service";
 import { fetchUserList } from "@/services/user.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PlantFamilyChart } from "@/components/ScpeciesOnFamily/PlantFamilyChart";
+import ContributeDashboard from "@/components/ContributeDashboard/ContributeDashboard";
 
 
 
@@ -64,7 +65,7 @@ const Dashboard = () => {
       <div>
         <PlantFamilyChart/> 
       </div>
-
+      <div><ContributeDashboard/></div>
       <div className="space-y-3 text-sm">
         <div>
           <span>🌱 Plants: </span>
