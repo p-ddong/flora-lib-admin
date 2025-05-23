@@ -42,6 +42,10 @@ const FamiliesPage = () => {
   const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
+  };
+
   const grouped = useMemo(() => {
     const map: Record<string, typeof plants> = {};
     plants.forEach((plant) => {
@@ -232,7 +236,7 @@ const FamiliesPage = () => {
                           {plant.scientific_name}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {plant.common_name.join(", ")}
+                          {truncateText(plant.common_name.join(", "), 80)}
                         </div>
                       </div>
                     </TableCell>
