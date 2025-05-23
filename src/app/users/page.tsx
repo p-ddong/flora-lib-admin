@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { User } from "@/types";
+import { User2 } from "@/types";
 import {
   Table,
   TableBody,
@@ -71,7 +71,7 @@ const UsersPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.map((u: User) => (
+          {filtered.map((u: User2) => (
             <TableRow key={u._id}>
               <TableCell>{u.username}</TableCell>
               <TableCell>{u.email}</TableCell>

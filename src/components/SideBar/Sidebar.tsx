@@ -26,7 +26,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -60,7 +64,9 @@ export default function Sidebar() {
             href="/dashboard"
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-              pathname === "/dashboard" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+              pathname === "/dashboard"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground"
             )}
           >
             <Home className="h-5 w-5" />
@@ -72,7 +78,9 @@ export default function Sidebar() {
             href="/users"
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-              pathname === "/users" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+              pathname === "/users"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground"
             )}
           >
             <Users className="h-5 w-5" />
@@ -84,7 +92,9 @@ export default function Sidebar() {
             href="/contributes"
             className={cn(
               "flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-              pathname === "/contributes" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+              pathname === "/contributes"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground"
             )}
           >
             <div className="flex items-center gap-3">
@@ -104,7 +114,9 @@ export default function Sidebar() {
               <button
                 className={cn(
                   "flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors w-full hover:bg-accent hover:text-accent-foreground",
-                  isPlantPath ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                  isPlantPath
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -153,14 +165,13 @@ export default function Sidebar() {
             <div className="flex items-center gap-3 cursor-pointer p-2 rounded-md hover:bg-accent transition-colors">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="https://github.com/shadcn.png" />
-                <AvatarFallback>{user?.username?.charAt(0).toUpperCase() ?? "U"}</AvatarFallback>
+                <AvatarFallback>
+                  {user?.username?.charAt(0).toUpperCase() ?? "U"}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <p className="text-sm font-medium leading-none">
                   {user?.username ?? "User"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {user?.email ?? ""}
                 </p>
               </div>
             </div>
@@ -169,12 +180,16 @@ export default function Sidebar() {
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Account</span>
+              <Link href={"/profile"} className="flex">
+                <User className="mr-2 h-4 w-4" />
+                <span>Account</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <Bell className="mr-2 h-4 w-4" />
-              <span>Notifications</span>
+              <Link href={"/profile"} className="flex">
+                <Bell className="mr-2 h-4 w-4" />
+                <span>Notifications</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-red-600" onClick={handleLogout}>

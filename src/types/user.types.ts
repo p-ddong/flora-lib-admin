@@ -1,11 +1,8 @@
 export interface User {
-  _id: string;
+  sub: string; 
   username: string;
-  email: string;
-  password: string;
   role: string;
-  createdAt: string;
-  updatedAt: string;
+  permissions: string[];
 }
 
 export interface User2 {
@@ -19,4 +16,4 @@ export interface User2 {
   __v?: number;
 }
 
-export type UserList = User[];
+export type UserList = User2[];
