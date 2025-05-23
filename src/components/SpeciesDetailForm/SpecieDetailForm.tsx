@@ -482,7 +482,7 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
                   <Input
                     placeholder="Section Name"
                     {...register(`species_description.${sectionIndex}.section`)}
-                    className="mb-2 font-bold"
+                    className="mb-2 font-bold text-emerald-600"
                   />
                 )}
 
