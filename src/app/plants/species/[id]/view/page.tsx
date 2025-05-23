@@ -1,6 +1,7 @@
 // src/app/plants/species/[id]/page.tsx
 "use client";
-import { PlantDetailClient } from "@/components/PlantDetailClient/PlantDetailClient";
+import { PlantDetailView } from "@/components/PlantDetail/PlantDetail";
+// import { PlantDetailClient } from "@/components/PlantDetailClient/PlantDetailClient";
 import { useParams } from "next/navigation";
 
 
@@ -10,5 +11,5 @@ export default function PlantDetailPage() {
 
   if (!id) return <div className="text-red-500">Invalid species ID</div>;
 
-  return <PlantDetailClient id={id} />;
+  return <PlantDetailView id={id} />;
 }
