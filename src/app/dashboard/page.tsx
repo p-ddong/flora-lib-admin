@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { setPlantList, setPlantLoading } from "@/store/plantSlice";
@@ -15,12 +15,13 @@ import { fetchUserList } from "@/services/user.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PlantFamilyChart } from "@/components/ScpeciesOnFamily/PlantFamilyChart";
 import ContributeDashboard from "@/components/ContributeDashboard/ContributeDashboard";
-
-
+import { jwtDecode } from "jwt-decode";
+import { User } from "@/types";
+import { setUser } from "@/store/authSlice";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const token = useSelector((state: RootState) => state.auth.token);
+  const [token, setToken] = useState<string | null>(null);
 
   const plants = useSelector((state: RootState) => state.plant.list);
   const plantLoading = useSelector((state: RootState) => state.plant.loading);
@@ -34,7 +35,15 @@ const Dashboard = () => {
   const userLoading = useSelector((state: RootState) => state.user.loading);
 
   useEffect(() => {
+    const stored = window.localStorage.getItem("token");
+    setToken(stored);
+  }, []);
+
+  useEffect(() => {
     if (!token) return;
+
+    const decodedUser = jwtDecode<User>(token);
+    dispatch(setUser(decodedUser));
 
     if (plants.length === 0) {
       dispatch(setPlantLoading(true));
@@ -56,16 +65,20 @@ const Dashboard = () => {
         .then((res) => dispatch(setUserList(res)))
         .catch(() => dispatch(setUserLoading(false)));
     }
-  }, [token, plants.length, contributes.length, users.length, dispatch]);
+  }, [token, plants.length, 
+    contributes.length, 
+    users.length, dispatch]);
 
   return (
     <div className="p-6 space-y-6 h-screen overflow-y-auto">
       <h1 className="text-2xl font-bold">Dashboard</h1>
 
       <div>
-        <PlantFamilyChart/> 
+        <PlantFamilyChart />
       </div>
-      <div><ContributeDashboard/></div>
+      <div>
+        <ContributeDashboard />
+      </div>
       <div className="space-y-3 text-sm">
         <div>
           <span>🌱 Plants: </span>

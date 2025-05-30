@@ -3,7 +3,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,26 +24,33 @@ import {
 import { Eye, Pencil, Trash, ChevronDown, ChevronRight } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls/PaginationControls";
 import Link from "next/link";
-
-type SortField = "name" | "count";
-type SortOrder = "asc" | "desc";
+import {
+  createFamily,
+  deleteFamilyById,
+  deletePlantById,
+  fetchFamilyMap,
+} from "@/services/family.service";
 
 const FamiliesPage = () => {
   const plants = useSelector((state: RootState) => state.plant.list);
 
   const [search, setSearch] = useState("");
-  const [sortField, setSortField] = useState<SortField>("name");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
   const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newFamily, setNewFamily] = useState("");
+  const [familyIdMap, setFamilyIdMap] = useState<Record<string, string>>({});
+  const [sortField, setSortField] = useState<"name" | "count">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const itemsPerPage = 10;
 
-  const truncateText = (text: string, maxLength: number) => {
-    return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
-  };
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    fetchFamilyMap(token).then(setFamilyIdMap).catch(console.error);
+  }, []);
 
   const grouped = useMemo(() => {
     const map: Record<string, typeof plants> = {};
@@ -58,13 +64,11 @@ const FamiliesPage = () => {
 
   const families = useMemo(() => {
     let entries = Object.entries(grouped);
-
     if (search.trim()) {
       entries = entries.filter(([name]) =>
         name.toLowerCase().includes(search.toLowerCase())
       );
     }
-
     entries.sort(([aName, aList], [bName, bList]) => {
       if (sortField === "name") {
         return sortOrder === "asc"
@@ -76,7 +80,6 @@ const FamiliesPage = () => {
           : bList.length - aList.length;
       }
     });
-
     return entries;
   }, [grouped, search, sortField, sortOrder]);
 
@@ -85,10 +88,6 @@ const FamiliesPage = () => {
     const start = (currentPage - 1) * itemsPerPage;
     return families.slice(start, start + itemsPerPage);
   }, [families, currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, sortField, sortOrder]);
 
   const toggleExpanded = (family: string) => {
     setExpanded((prev) => ({ ...prev, [family]: !prev[family] }));
@@ -107,7 +106,6 @@ const FamiliesPage = () => {
     const allSelected = currentPageFamilies.every((name) =>
       selectedFamilies.includes(name)
     );
-
     if (allSelected) {
       setSelectedFamilies((prev) =>
         prev.filter((name) => !currentPageFamilies.includes(name))
@@ -119,58 +117,85 @@ const FamiliesPage = () => {
     }
   };
 
-  const handleDelete = () => {
-    console.log("Deleting families:", selectedFamilies);
-    setSelectedFamilies([]);
-    setDeleteDialogOpen(false);
+  const handleDelete = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      for (const family of selectedFamilies) {
+        const species = grouped[family] || [];
+
+        for (const plant of species) {
+          await deletePlantById(plant._id, token);
+        }
+
+        if (species.length === 0 || species.every((p) => !p._id)) {
+          const familyId = familyIdMap[family];
+          if (familyId) {
+            await deleteFamilyById(familyId, token);
+          }
+        }
+      }
+
+      setSelectedFamilies([]);
+      setDeleteDialogOpen(false);
+      window.location.reload();
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  };
+
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
   };
 
   return (
     <div className="p-6 space-y-6 h-screen overflow-y-auto">
       <h1 className="text-2xl font-bold">Families</h1>
-
-      <div className="w-full space-y-2">
-        <div className="space-y-1 max-w-sm">
-          <Label htmlFor="search">Search by Name</Label>
-          <Input
-            id="search"
-            placeholder="Family name"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        <div className="flex gap-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Search by family name..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-1/4"
+        />
+        <p>Total family: {families.length}</p>
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setSortField("name");
+            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+          }}
+        >
+          Sort by Name{" "}
+          {sortField === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setSortField("count");
+            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+          }}
+        >
+          Sort by Count{" "}
+          {sortField === "count" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+        </Button>
+        <Button
+          className="bg-green-500 text-white"
+          onClick={() => setCreating(true)}
+        >
+          Add new family
+        </Button>
+        {selectedFamilies.length > 0 && (
           <Button
-            variant="outline"
-            onClick={() => {
-              setSortField("name");
-              setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-            }}
+            variant="destructive"
+            onClick={() => setDeleteDialogOpen(true)}
           >
-            Sort by Name{" "}
-            {sortField === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+            Delete selected ({selectedFamilies.length})
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSortField("count");
-              setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-            }}
-          >
-            Sort by Species Count{" "}
-            {sortField === "count" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
-          </Button>
-
-          {selectedFamilies.length > 0 && (
-            <Button
-              variant="destructive"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              Delete selected ({selectedFamilies.length})
-            </Button>
-          )}
-        </div>
+        )}
       </div>
 
       <Table>
@@ -213,23 +238,21 @@ const FamiliesPage = () => {
                   </button>
                 </TableCell>
                 <TableCell className="text-right">{species.length}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button variant="ghost" size="icon">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-red-600">
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-500"
+                    disabled
+                  >
                     <Trash className="h-4 w-4" />
                   </Button>
                 </TableCell>
               </TableRow>
-
               {expanded[family] &&
                 species.map((plant) => (
                   <TableRow key={plant._id} className="bg-muted/50">
-                    <TableCell></TableCell>
+                    <TableCell />
                     <TableCell colSpan={2}>
                       <div className="pl-6">
                         <div className="font-medium">
@@ -246,7 +269,7 @@ const FamiliesPage = () => {
                           <Eye className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button variant="ghost" size="icon">
+                      <Button asChild variant="ghost" size="icon">
                         <Link href={`/plants/species/${plant._id}/edit`}>
                           <Pencil className="h-4 w-4" />
                         </Link>
@@ -255,6 +278,7 @@ const FamiliesPage = () => {
                         variant="ghost"
                         size="icon"
                         className="text-red-600"
+                        disabled
                       >
                         <Trash className="h-4 w-4" />
                       </Button>
@@ -266,22 +290,20 @@ const FamiliesPage = () => {
         </TableBody>
       </Table>
 
-      {/* Pagination */}
       <PaginationControls
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete selected families?</DialogTitle>
           </DialogHeader>
           <div>
-            Are you sure you want to delete {selectedFamilies.length} families?
-            This action cannot be undone.
+            Are you sure you want to delete {selectedFamilies.length} selected
+            families?
           </div>
           <DialogFooter>
             <Button
@@ -292,6 +314,39 @@ const FamiliesPage = () => {
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={creating} onOpenChange={setCreating}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Family</DialogTitle>
+          </DialogHeader>
+          <Input
+            placeholder="Enter family name"
+            value={newFamily}
+            onChange={(e) => setNewFamily(e.target.value)}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreating(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                const token = localStorage.getItem("token");
+                if (!token || !newFamily.trim()) return;
+                try {
+                  await createFamily(newFamily.trim(), token);
+                  setCreating(false);
+                  setNewFamily("");
+                } catch (err) {
+                  console.error("Create family failed:", err);
+                }
+              }}
+            >
+              Create
             </Button>
           </DialogFooter>
         </DialogContent>

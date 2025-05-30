@@ -16,6 +16,7 @@ import {
   LogOut,
   User,
   Bell,
+  HistoryIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -155,6 +156,19 @@ export default function Sidebar() {
               </Link>
             </CollapsibleContent>
           </Collapsible>
+
+          <Link
+            href="/histories"
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+              pathname === "/histories"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground"
+            )}
+          >
+            <HistoryIcon className="h-5 w-5" />
+            <span>Histories</span>
+          </Link>
         </nav>
       </div>
 
