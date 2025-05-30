@@ -32,7 +32,6 @@ import { useMemo, useState } from "react";
 
 const ContributesPage = () => {
   const contributions = useSelector((state: RootState) => state.contribute.list);
-
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -49,8 +48,8 @@ const ContributesPage = () => {
       const s = search.toLowerCase();
       list = list.filter(
         (c) =>
-          c.user.username.toLowerCase().includes(s) ||
-          c.contribute_plant.scientific_name.toLowerCase().includes(s)
+          c.c_user.username.toLowerCase().includes(s) ||
+          c.data.plant.scientific_name.toLowerCase().includes(s)
       );
     }
 
@@ -141,14 +140,14 @@ const ContributesPage = () => {
         <TableBody>
           {filtered.map((c) => (
             <TableRow key={c._id}>
-              <TableCell>{c.user.username}</TableCell>
-              <TableCell>{c.contribute_plant.scientific_name}</TableCell>
+              <TableCell>{c.c_user.username}</TableCell>
+              <TableCell>{c.data.plant.scientific_name}</TableCell>
               <TableCell className="capitalize">{c.type}</TableCell>
               <TableCell className="capitalize">{c.status}</TableCell>
               <TableCell>{format(new Date(c.createdAt), "dd/MM/yyyy HH:mm")}</TableCell>
               <TableCell className="text-right space-x-2">
                 <Button asChild variant="ghost" size="icon">
-                  <Link href={`/contributes/${c._id}`}>
+                  <Link href={`/contributes/view/${c._id}`}>
                     <Eye className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -157,7 +156,6 @@ const ContributesPage = () => {
                   size="icon"
                   className="text-red-600"
                   onClick={() => {
-                    // TODO: add delete logic
                     console.log("Delete contribution:", c._id);
                   }}
                 >

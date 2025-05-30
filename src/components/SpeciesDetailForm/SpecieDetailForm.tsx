@@ -49,6 +49,7 @@ type FormValues = {
   common_name: { value: string }[];
   attributes: { value: string }[];
   images: string[];
+  newImages: File[];
   species_description: SpeciesSection[];
 };
 
@@ -84,6 +85,7 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
         common_name: [],
         attributes: [],
         images: [],
+        newImages: [],
         species_description: [],
       },
     });
@@ -224,11 +226,20 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
     }
 
     try {
-      const url = id
-        ? `${BASE_API}${ENDPOINT_PLANT.update}/${id}`
-        : `${BASE_API}${ENDPOINT_PLANT.create}`;
-      const method = id ? axios.put : axios.post;
-      await method(url, { ...data, species_description: validDescriptions });
+      const payload = {
+        ...data,
+        common_name: data.common_name.map((c) => c.value),
+        attributes: data.attributes.map((a) => a.value),
+        species_description: validDescriptions,
+      };
+
+      console.log("Submit payload:", payload);
+
+      // Gửi payload bằng axios POST/PUT nếu muốn
+      // const url = id ? `${BASE_API}${ENDPOINT_PLANT.update}/${id}` : `${BASE_API}${ENDPOINT_PLANT.create}`;
+      // const method = id ? axios.put : axios.post;
+      // await method(url, payload);
+
       alert("Saved successfully");
     } catch (err) {
       console.error(err);
@@ -297,36 +308,41 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
 
         {/* Add Image from Local */}
         <div className="mt-4">
+          <label className="font-medium ml-2">Add New Image</label>
           <input
             type="file"
             accept="image/*"
-            // onChange={async (e) => {
-            //   const file = e.target.files?.[0];
-            //   if (!file) return;
-
-            //   const formData = new FormData();
-            //   formData.append("file", file);
-            //   formData.append("upload_preset", "YOUR_UPLOAD_PRESET");
-
-            //   try {
-            //     const res = await fetch(
-            //       "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload",
-            //       {
-            //         method: "POST",
-            //         body: formData,
-            //       }
-            //     );
-            //     const data = await res.json();
-            //     const url = data.public_id; // 👈 Nếu bạn dùng CldImage thì cần public_id, không phải full URL
-            //     setValue("images", [...watch("images"), url]);
-            //   } catch (err) {
-            //     console.error("Upload failed", err);
-            //     alert("Image upload failed");
-            //   }
-
-            //   e.target.value = ""; // clear input
-            // }}
+            multiple
+            onChange={(e) => {
+              const files = e.target.files;
+              if (!files || files.length === 0) return;
+              const newFiles = Array.from(files);
+              const currentFiles = watch("newImages") || [];
+              setValue("newImages", [...currentFiles, ...newFiles]);
+              e.target.value = ""; // reset input
+            }}
           />
+
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {(watch("newImages") || []).map((file, idx) => (
+              <li key={idx}>
+                {file.name}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="ml-2 text-xs text-red-500"
+                  onClick={() => {
+                    const updated = watch("newImages").filter(
+                      (_, i) => i !== idx
+                    );
+                    setValue("newImages", updated);
+                  }}
+                >
+                  ✕
+                </Button>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
@@ -504,7 +520,11 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
                           {...register(labelPath)}
                         />
                       ) : (
-                        <Input placeholder="Label" {...register(labelPath)} className="font-semibold"/>
+                        <Input
+                          placeholder="Label"
+                          {...register(labelPath)}
+                          className="font-semibold"
+                        />
                       )}
                       <Textarea
                         placeholder="Content"

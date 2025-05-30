@@ -1,20 +1,28 @@
-"use client";
+'use client';
 
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { useDispatch } from "react-redux";
-import { login } from "@/services/auth.service";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
+import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
+import { login } from '@/services/auth.service';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { setToken } from '@/store/authSlice';
+import { useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import { setToken, setUser } from "@/store/authSlice";
-import { User } from "@/types";
 
 interface LoginFormInputs {
   username: string;
   password: string;
 }
+
+type JwtPayload = {
+  sub: string;
+  username: string;
+  role: string;
+  permissions: string[];
+  iat: number;
+  exp: number;
+};
 
 export default function LoginPage() {
   const {
@@ -25,22 +33,28 @@ export default function LoginPage() {
 
   const router = useRouter();
   const dispatch = useDispatch();
+  const [loginError, setLoginError] = useState('');
 
-const onSubmit = async (data: LoginFormInputs) => {
-  try {
-    const token = await login(data.username, data.password);
-    localStorage.setItem("token", token);
-    dispatch(setToken(token));
+  const onSubmit = async (data: LoginFormInputs) => {
+    try {
+      setLoginError('');
+      const token = await login(data.username, data.password);
 
-    const decodedUser = jwtDecode<User>(token);
-    dispatch(setUser(decodedUser));
+      const decoded = jwtDecode<JwtPayload>(token);
 
-    router.replace('/dashboard');
-  } catch (err) {
-    console.error("Login failed", err);
-    alert("Invalid email or password.");
-  }
-};
+      if (decoded.role === 'user') {
+        setLoginError('Access denied. User role is not allowed.');
+        return;
+      }
+
+      localStorage.setItem('token', token);
+      dispatch(setToken(token));
+      router.replace('/dashboard');
+    } catch (err) {
+      console.error('Login failed', err);
+      setLoginError((err as Error).message || 'Login failed');
+    }
+  };
 
   return (
     <div className="flex min-h-screen w-dvw">
@@ -60,52 +74,39 @@ const onSubmit = async (data: LoginFormInputs) => {
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <label
-                    className="text-sm font-medium leading-none"
-                    htmlFor="username"
-                  >
+                  <label className="text-sm font-medium" htmlFor="username">
                     Username
                   </label>
                   <Input
                     id="username"
-                    placeholder="name@example.com"
+                    placeholder="yourname"
                     type="text"
-                    {...register("username", { required: "Email is required" })}
+                    {...register('username', { required: 'Username is required' })}
                   />
                   {errors.username && (
-                    <p className="text-red-500 text-sm">
-                      {errors.username.message}
-                    </p>
+                    <p className="text-red-500 text-sm">{errors.username.message}</p>
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <div className="flex items-center justify-between">
-                    <label
-                      className="text-sm font-medium leading-none"
-                      htmlFor="password"
-                    >
-                      Password
-                    </label>
-                  </div>
+                  <label className="text-sm font-medium" htmlFor="password">
+                    Password
+                  </label>
                   <Input
                     id="password"
                     type="password"
-                    {...register("password", {
-                      required: "Password is required",
-                    })}
+                    {...register('password', { required: 'Password is required' })}
                   />
                   {errors.password && (
-                    <p className="text-red-500 text-sm">
-                      {errors.password.message}
-                    </p>
+                    <p className="text-red-500 text-sm">{errors.password.message}</p>
                   )}
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Signing in..." : "Sign in"}
+
+                {loginError && (
+                  <p className="text-red-600 text-sm text-center">{loginError}</p>
+                )}
+
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? 'Signing in...' : 'Sign in'}
                 </Button>
               </div>
             </form>
@@ -113,10 +114,8 @@ const onSubmit = async (data: LoginFormInputs) => {
         </div>
       </div>
 
-      {/* Right side - Brand/Image */}
-      <div className="hidden md:block md:w-1/2 bg-muted">
-                  
-      </div>
+      {/* Right side - Image or Branding */}
+      <div className="hidden md:block md:w-1/2 bg-muted"></div>
     </div>
   );
 }

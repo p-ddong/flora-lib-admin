@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, Pencil, Trash, Check, ChevronsUpDown } from "lucide-react";
 import React, { useMemo, useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import {
   Popover,
@@ -38,12 +38,14 @@ import { cn } from "@/lib/utils";
 import PaginationControls from "@/components/PaginationControls/PaginationControls";
 import Link from "next/link";
 import { CldImage } from "next-cloudinary";
+import { deletePlantById } from "@/services/plant.service";
+import { setPlantList } from "@/store/plantSlice";
 
 type ViewType = "table" | "card";
 
 const SpeciesPage = () => {
   const plants = useSelector((state: RootState) => state.plant.list);
-
+  const dispatch = useDispatch();
   const [view, setView] = useState<ViewType>("table");
   const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -117,11 +119,11 @@ const SpeciesPage = () => {
     }
   };
 
-  const handleDeleteMany = () => {
-    console.log("Deleted IDs:", selectedIds);
-    setSelectedIds([]);
-    setDeleteDialogOpen(false);
-  };
+  // const handleDeleteMany = () => {
+  //   console.log("Deleted IDs:", selectedIds);
+  //   setSelectedIds([]);
+  //   setDeleteDialogOpen(false);
+  // };
 
   const exportToCSV = () => {
     const selectedPlants = plants.filter((p) => selectedIds.includes(p._id));
@@ -151,90 +153,96 @@ const SpeciesPage = () => {
       <h1 className="text-2xl font-bold">Species</h1>
 
       {/* Filter UI */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <Input
-          placeholder="Search by name..."
-          className="max-w-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              className="min-w-[200px] justify-between"
-            >
-              {selectedFamily || "Filter by Family"}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0">
-            <Command>
-              <CommandInput placeholder="Search family..." />
-              <CommandEmpty>No family found.</CommandEmpty>
-              <CommandGroup>
-                <CommandItem
-                  onSelect={() => {
-                    setSelectedFamily(null);
-                    setOpen(false);
-                  }}
-                >
-                  All Families
-                </CommandItem>
-                {familyOptions.map((family) => (
+      <div className="items-center space-y-2">
+        <div className="space-x-2 flex items-center">
+          <Input
+            placeholder="Search by name..."
+            className="max-w-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <p>Total plant: {plants.length}</p>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="min-w-[200px] justify-between"
+              >
+                {selectedFamily || "Filter by Family"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0">
+              <Command>
+                <CommandInput placeholder="Search family..." />
+                <CommandEmpty>No family found.</CommandEmpty>
+                <CommandGroup>
                   <CommandItem
-                    key={family}
                     onSelect={() => {
-                      setSelectedFamily(family);
+                      setSelectedFamily(null);
                       setOpen(false);
                     }}
                   >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        family === selectedFamily ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {family}
+                    All Families
                   </CommandItem>
-                ))}
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
+                  {familyOptions.map((family) => (
+                    <CommandItem
+                      key={family}
+                      onSelect={() => {
+                        setSelectedFamily(family);
+                        setOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          family === selectedFamily
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                      {family}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
 
-        <Button onClick={() => setSortAsc((prev) => !prev)} variant="outline">
-          Sort by Scientific Name {sortAsc ? "↑" : "↓"}
-        </Button>
+          <Button onClick={() => setSortAsc((prev) => !prev)} variant="outline">
+            Sort by Scientific Name {sortAsc ? "↑" : "↓"}
+          </Button>
 
-        <Button
-          variant={view === "table" ? "default" : "outline"}
-          onClick={() => setView("table")}
-        >
-          Table View
-        </Button>
-        <Button
-          variant={view === "card" ? "default" : "outline"}
-          onClick={() => setView("card")}
-        >
-          Card View
-        </Button>
-        <Button className="bg-green-500">
-          <Link href={`/plants/species/add`}>Add New Specie</Link>
-        </Button>
-        {selectedIds.length > 0 && (
-          <>
-            <Button
-              variant="destructive"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              Delete ({selectedIds.length})
-            </Button>
-            <Button onClick={exportToCSV}>Export to CSV</Button>
-          </>
-        )}
+          <Button
+            variant={view === "table" ? "default" : "outline"}
+            onClick={() => setView("table")}
+          >
+            Table View
+          </Button>
+          <Button
+            variant={view === "card" ? "default" : "outline"}
+            onClick={() => setView("card")}
+          >
+            Card View
+          </Button>
+          <Button className="bg-green-500">
+            <Link href={`/plants/species/add`}>Add New Specie</Link>
+          </Button>
+          {selectedIds.length > 0 && (
+            <>
+              <Button
+                variant="destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                Delete ({selectedIds.length})
+              </Button>
+              <Button onClick={exportToCSV}>Export to CSV</Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Table View */}
@@ -315,7 +323,7 @@ const SpeciesPage = () => {
                   className="w-full h-40 object-cover"
                 />
               ) : (
-                <div className="w-[400px] h-[160px] bg-gray-400"/>
+                <div className="w-[400px] h-[160px] bg-gray-400" />
               )}
 
               <div className="p-4 space-y-1">
@@ -385,13 +393,34 @@ const SpeciesPage = () => {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                if (targetToDelete) {
-                  console.log("Deleted plant ID:", targetToDelete);
-                  setTargetToDelete(null);
-                } else {
-                  handleDeleteMany();
+              onClick={async () => {
+                const token = localStorage.getItem("token");
+                if (!token) return;
+
+                try {
+                  if (targetToDelete) {
+                    await deletePlantById(targetToDelete, token);
+                    dispatch(
+                      setPlantList(
+                        plants.filter((p) => p._id !== targetToDelete)
+                      )
+                    );
+                  } else {
+                    await Promise.all(
+                      selectedIds.map((id) => deletePlantById(id, token))
+                    );
+                    dispatch(
+                      setPlantList(
+                        plants.filter((p) => !selectedIds.includes(p._id))
+                      )
+                    );
+                    setSelectedIds([]);
+                  }
+                } catch (err) {
+                  console.error("Delete error:", err);
                 }
+
+                setTargetToDelete(null);
                 setDeleteDialogOpen(false);
               }}
             >

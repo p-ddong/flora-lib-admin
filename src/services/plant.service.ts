@@ -41,3 +41,14 @@ export const fetchPlantList = async (token: string): Promise<PlantList[]> => {
   })
   return res.data
 }
+
+// ✅ Delete plant by ID
+export const deletePlantById = async (id: string, token: string) => {
+  const res = await axiosInstance.delete(`/plants/delete/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};
+
