@@ -20,7 +20,7 @@ import Link from "next/link";
 const ContributeDashboard: React.FC = () => {
   /* -------- lấy danh sách pending -------- */
   const pending = useSelector((state: RootState) =>
-    state.contribute.list.filter((c) => c.status === "pending")
+    state.contribute.list.filter((c) => c.status == "pending")
   );
 
   /* không có gì thì ẩn thẻ */

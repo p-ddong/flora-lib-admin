@@ -68,7 +68,7 @@ const SpeciesPage = () => {
   };
 
   const familyOptions = useMemo(() => {
-    const set = new Set(plants.map((p) => p.family_name));
+    const set = new Set(plants.map((p) => p.family));
     return Array.from(set).sort();
   }, [plants]);
 
@@ -76,7 +76,7 @@ const SpeciesPage = () => {
     let list = [...plants];
 
     if (selectedFamily) {
-      list = list.filter((p) => p.family_name === selectedFamily);
+      list = list.filter((p) => p.family === selectedFamily);
     }
 
     if (searchTerm.trim()) {
@@ -133,7 +133,7 @@ const SpeciesPage = () => {
     const rows = selectedPlants.map((plant) => [
       `"${plant.scientific_name}"`,
       `"${plant.common_name.join(", ")}"`,
-      `"${plant.family_name}"`,
+      `"${plant.family}"`,
     ]);
 
     const csvContent = [header, ...rows].map((row) => row.join(",")).join("\n");
@@ -276,7 +276,7 @@ const SpeciesPage = () => {
                     {truncateText(plant.common_name.join(", "), 80)}
                   </div>
                 </TableCell>
-                <TableCell>{plant.family_name}</TableCell>
+                <TableCell>{plant.family}</TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button asChild variant="ghost" size="icon">
                     <Link href={`/plants/species/${plant._id}/view`}>

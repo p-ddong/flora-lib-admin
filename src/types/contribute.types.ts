@@ -1,28 +1,10 @@
 // src/types/contribution.ts
 
+import { PlantDetail } from "./plant.types";
+
 export interface ContributionUser {
   _id: string;
   username: string;
-}
-
-export interface SpeciesDescriptionTable {
-  title: string;
-  content: string;
-}
-
-export interface SpeciesDescription {
-  title: string;
-  tables: SpeciesDescriptionTable[];
-}
-
-export interface ContributionPlant {
-  scientific_name: string;
-  common_name: string[];
-  description: string;
-  attributes: string[];
-  images: string[];
-  species_description: SpeciesDescription[];
-  family: string;
 }
 
 export type ContributionStatus = "pending" | "approved" | "rejected";
@@ -36,8 +18,9 @@ export interface Contribution {
   type: ContributionType;
   status: ContributionStatus;
   data: {
-    plant: ContributionPlant;
-    newImages: string[];
+    plant: PlantDetail;
+    new_images: string[];
+    plant_ref?:string;
   };
   createdAt: string;
   updatedAt: string;

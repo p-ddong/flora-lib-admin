@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/accordion";
 import { Textarea } from "@/components/ui/textarea";
 import { ENDPOINT_PLANT, BASE_API } from "@/constant/API";
-import { SpeciesSection } from "@/types";
+import { Attribute, Family, SpeciesSection } from "@/types";
 import { Loader2, Plus, Trash2, ChevronsUpDown, Check } from "lucide-react";
 import {
   Popover,
@@ -45,7 +45,7 @@ interface SpecieDetailFormProps {
 
 type FormValues = {
   scientific_name: string;
-  family_name: string;
+  family: string;
   common_name: { value: string }[];
   attributes: { value: string }[];
   images: string[];
@@ -71,17 +71,18 @@ const fixedSections = [
 
 export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
   const [loading, setLoading] = useState(false);
-  const [attributesList, setAttributesList] = useState<string[]>([]);
-  const [familiesList, setFamiliesList] = useState<string[]>([]);
+  const [attributesList, setAttributesList] = useState<Attribute[]>([]);
+  const [familiesList, setFamiliesList] = useState<Family[]>([]);
   const [newCommonName, setNewCommonName] = useState("");
   const [open, setOpen] = useState(false);
-  const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
+  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null);
+  const [localToken, setLocalToken] = useState<string | null>(null);
 
   const { register, control, handleSubmit, reset, setValue, watch } =
     useForm<FormValues>({
       defaultValues: {
         scientific_name: "",
-        family_name: "",
+        family: "",
         common_name: [],
         attributes: [],
         images: [],
@@ -115,101 +116,76 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
 
   useEffect(() => {
     axios.get(`${BASE_API}${ENDPOINT_PLANT.attributes}`).then((res) => {
-      setAttributesList(res.data.map((item: any) => item.name));
+      setAttributesList(res.data);
     });
     axios.get(`${BASE_API}${ENDPOINT_PLANT.families}`).then((res) => {
-      const families = res.data.map((item: any) => item.name);
-      setFamiliesList(families);
+      setFamiliesList(res.data);
     });
   }, []);
 
   useEffect(() => {
-    if (id) {
-      setLoading(true);
-      axios
-        .get(`${BASE_API}${ENDPOINT_PLANT.detail}/${id}`)
-        .then((res) => {
-          reset(res.data);
-          setSelectedFamily(res.data.family_name);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      const fixedInit = fixedSections.map((s) => ({
-        section: s.section,
-        details: s.details.map((d) => ({ label: d, content: "" })),
-      }));
-      reset({
-        scientific_name: "",
-        family_name: "",
-        common_name: [],
-        attributes: [],
-        images: [],
-        species_description: fixedInit,
-      });
-    }
-  }, [id, reset]);
-
-  useEffect(() => {
-    setValue("family_name", selectedFamily ?? "");
-  }, [selectedFamily, setValue]);
-
-  useEffect(() => {
-    axios.get(`${BASE_API}${ENDPOINT_PLANT.attributes}`).then((res) => {
-      setAttributesList(res.data.map((item: any) => item.name));
-    });
-    axios.get(`${BASE_API}${ENDPOINT_PLANT.families}`).then((res) => {
-      setFamiliesList(res.data.map((item: any) => item.name));
-    });
+    const stored = window.localStorage.getItem("token");
+    setLocalToken(stored);
   }, []);
 
   useEffect(() => {
-    if (id) {
+    if (id && familiesList.length > 0) {
       setLoading(true);
       axios
         .get(`${BASE_API}${ENDPOINT_PLANT.detail}/${id}`)
         .then((res) => {
           const data = res.data;
-
           const transformed = {
             ...data,
+            family: data.family_name?.name || data.family?.name || "",
             common_name: (data.common_name || []).map((name: string) => ({
               value: name,
             })),
-            attributes: (data.attributes || []).map((attr: string) => ({
-              value: attr,
+            attributes: (data.attributes || []).map((attr: any) => ({
+              value: attr._id || attr,
             })),
           };
-
           reset(transformed);
-          setSelectedFamily(data.family_name);
+          const matchedFamily = familiesList.find(
+            (f: Family) =>
+              f._id === data.family_name?._id ||
+              f.name === data.family_name?.name
+          );
+          setSelectedFamily(matchedFamily || null);
         })
         .finally(() => setLoading(false));
-    } else {
+    } else if (!id) {
       const fixedInit = fixedSections.map((s) => ({
         section: s.section,
         details: s.details.map((d) => ({ label: d, content: "" })),
       }));
       reset({
         scientific_name: "",
-        family_name: "",
+        family: "",
         common_name: [],
         attributes: [],
         images: [],
         species_description: fixedInit,
+        newImages: [],
       });
     }
-  }, [id, reset]);
+  }, [id, reset, familiesList]);
+
+  const familyWatch = watch("family");
 
   useEffect(() => {
-    const familyWatch = watch("family_name");
-    if (!selectedFamily && familyWatch) {
-      setSelectedFamily(familyWatch);
-    } else if (familyWatch !== selectedFamily) {
-      setSelectedFamily(familyWatch);
+    if (
+      familyWatch &&
+      (!selectedFamily || selectedFamily.name !== familyWatch)
+    ) {
+      const matched = familiesList.find((f) => f.name === familyWatch);
+      if (matched) setSelectedFamily(matched);
     }
-  }, [watch, selectedFamily]);
+  }, [familyWatch, familiesList, selectedFamily]);
 
   const onSubmit = async (data: FormValues) => {
+    if (!localToken) return;
+
     const validDescriptions = data.species_description.filter((section) => {
       const fixed = fixedSections.find((f) => f.section === section.section);
       if (fixed) {
@@ -226,21 +202,44 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
     }
 
     try {
-      const payload = {
-        ...data,
-        common_name: data.common_name.map((c) => c.value),
-        attributes: data.attributes.map((a) => a.value),
-        species_description: validDescriptions,
-      };
+      const formData = new FormData();
+      formData.append("scientific_name", data.scientific_name);
+      formData.append("family", selectedFamily?._id ?? "");
+      const names = data.common_name.map((c) => c.value);
+      formData.append("common_name", JSON.stringify(names));
+      formData.append(
+        "attributes",
+        JSON.stringify(data.attributes.map((a) => a.value))
+      );
+      formData.append("species_description", JSON.stringify(validDescriptions));
 
-      console.log("Submit payload:", payload);
+      if (id) {
+        formData.append("images", JSON.stringify(data.images));
+        data.newImages?.forEach((file) => {
+          formData.append("new-images", file);
+        });
+      } else {
+        data.newImages.forEach((file) => {
+          if (typeof file !== "string") {
+            formData.append("images", file as File);
+          }
+        });
+      }
 
-      // Gửi payload bằng axios POST/PUT nếu muốn
-      // const url = id ? `${BASE_API}${ENDPOINT_PLANT.update}/${id}` : `${BASE_API}${ENDPOINT_PLANT.create}`;
-      // const method = id ? axios.put : axios.post;
-      // await method(url, payload);
+      const url = id
+        ? `${BASE_API}${ENDPOINT_PLANT.update}/${id}`
+        : `${BASE_API}${ENDPOINT_PLANT.create}`;
+
+      const method = id ? axios.patch : axios.post;
+
+      await method(url, formData, {
+        headers: {
+          Authorization: `Bearer ${localToken}`,
+        },
+      });
 
       alert("Saved successfully");
+      window.history.back();
     } catch (err) {
       console.error(err);
       alert("Save failed");
@@ -308,18 +307,27 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
 
         {/* Add Image from Local */}
         <div className="mt-4">
-          <label className="font-medium ml-2">Add New Image</label>
+          <label className="font-medium ml-2 mr-2">Add New Image</label>
+
+          <label
+            htmlFor="new-image-upload"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-800 border rounded cursor-pointer w-fit"
+          >
+            📁 Choose Images
+          </label>
           <input
+            id="new-image-upload"
             type="file"
             accept="image/*"
             multiple
+            className="hidden"
             onChange={(e) => {
               const files = e.target.files;
               if (!files || files.length === 0) return;
               const newFiles = Array.from(files);
               const currentFiles = watch("newImages") || [];
               setValue("newImages", [...currentFiles, ...newFiles]);
-              e.target.value = ""; // reset input
+              e.target.value = "";
             }}
           />
 
@@ -355,7 +363,7 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
               role="combobox"
               className="min-w-[200px] justify-between"
             >
-              {selectedFamily || "Filter by Family"}
+              {selectedFamily?.name || "Filter by Family"}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -366,7 +374,7 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
               <CommandGroup>
                 {familiesList.map((family) => (
                   <CommandItem
-                    key={family}
+                    key={family._id}
                     onSelect={() => {
                       setSelectedFamily(family);
                       setOpen(false);
@@ -375,10 +383,12 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        family === selectedFamily ? "opacity-100" : "opacity-0"
+                        family._id === selectedFamily?._id
+                          ? "opacity-100"
+                          : "opacity-0"
                       )}
                     />
-                    {family}
+                    {family.name}
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -428,7 +438,6 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
         </div>
       </div>
 
-      {/* Attributes */}
       <div className="mt-4">
         <label className="font-medium">Attributes</label>
         {attributeFields.map((field, index) => (
@@ -443,9 +452,9 @@ export default function SpecieDetailForm({ id }: SpecieDetailFormProps) {
                 <SelectValue placeholder="Select attribute" />
               </SelectTrigger>
               <SelectContent>
-                {attributesList.map((a) => (
-                  <SelectItem key={a} value={a}>
-                    {a}
+                {attributesList.map((attr) => (
+                  <SelectItem key={attr._id} value={attr._id}>
+                    {attr.name}
                   </SelectItem>
                 ))}
               </SelectContent>

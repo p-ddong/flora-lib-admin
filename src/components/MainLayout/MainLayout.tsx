@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "../SideBar/Sidebar";
 
 export default function MainLayout({
@@ -9,8 +10,27 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+
   const hideSidebarRoutes = ["/login"];
   const shouldHideSidebar = hideSidebarRoutes.includes(pathname);
+
+  // Kiểm tra token hết hạn quá 1 ngày
+  useEffect(() => {
+    if (shouldHideSidebar) return;
+
+    const token = localStorage.getItem("token");
+    const loginTime = localStorage.getItem("loginTime");
+
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (!token || !loginTime || now - new Date(loginTime).getTime() > oneDay) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("loginTime");
+      router.replace("/login");
+    }
+  }, [router, shouldHideSidebar]);
 
   return (
     <div className="h-screen">

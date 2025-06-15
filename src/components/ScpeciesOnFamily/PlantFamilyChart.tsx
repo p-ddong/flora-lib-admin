@@ -28,10 +28,10 @@ export function PlantFamilyChart() {
   const data = useMemo(() => {
     const countMap: Record<string, number> = {};
     plants.forEach((plant) => {
-      countMap[plant.family_name] = (countMap[plant.family_name] || 0) + 1;
+      countMap[plant.family] = (countMap[plant.family] || 0) + 1;
     });
     return Object.entries(countMap).map(([family, count]) => ({
-      family_name: family,
+      family: family,
       count,
     }));
   }, [plants]);
