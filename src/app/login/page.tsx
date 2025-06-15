@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import { useDispatch } from 'react-redux';
-import { login } from '@/services/auth.service';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { setToken } from '@/store/authSlice';
-import { useState } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { login } from "@/services/auth.service";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { setToken } from "@/store/authSlice";
+import { useState } from "react";
+import { jwtDecode } from "jwt-decode";
 
 interface LoginFormInputs {
   username: string;
@@ -33,26 +33,29 @@ export default function LoginPage() {
 
   const router = useRouter();
   const dispatch = useDispatch();
-  const [loginError, setLoginError] = useState('');
+  const [loginError, setLoginError] = useState("");
 
   const onSubmit = async (data: LoginFormInputs) => {
     try {
-      setLoginError('');
+      setLoginError("");
       const token = await login(data.username, data.password);
 
       const decoded = jwtDecode<JwtPayload>(token);
 
-      if (decoded.role === 'user') {
-        setLoginError('Access denied. User role is not allowed.');
+      if (decoded.role === "user") {
+        setLoginError("Access denied. User role is not allowed.");
         return;
       }
 
-      localStorage.setItem('token', token);
+      const loginTime = new Date().toISOString();
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("loginTime", loginTime);
       dispatch(setToken(token));
-      router.replace('/dashboard');
+      router.replace("/dashboard");
     } catch (err) {
-      console.error('Login failed', err);
-      setLoginError((err as Error).message || 'Login failed');
+      console.error("Login failed", err);
+      setLoginError((err as Error).message || "Login failed");
     }
   };
 
@@ -81,10 +84,14 @@ export default function LoginPage() {
                     id="username"
                     placeholder="yourname"
                     type="text"
-                    {...register('username', { required: 'Username is required' })}
+                    {...register("username", {
+                      required: "Username is required",
+                    })}
                   />
                   {errors.username && (
-                    <p className="text-red-500 text-sm">{errors.username.message}</p>
+                    <p className="text-red-500 text-sm">
+                      {errors.username.message}
+                    </p>
                   )}
                 </div>
                 <div className="grid gap-2">
@@ -94,19 +101,29 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type="password"
-                    {...register('password', { required: 'Password is required' })}
+                    {...register("password", {
+                      required: "Password is required",
+                    })}
                   />
                   {errors.password && (
-                    <p className="text-red-500 text-sm">{errors.password.message}</p>
+                    <p className="text-red-500 text-sm">
+                      {errors.password.message}
+                    </p>
                   )}
                 </div>
 
                 {loginError && (
-                  <p className="text-red-600 text-sm text-center">{loginError}</p>
+                  <p className="text-red-600 text-sm text-center">
+                    {loginError}
+                  </p>
                 )}
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? 'Signing in...' : 'Sign in'}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Signing in..." : "Sign in"}
                 </Button>
               </div>
             </form>

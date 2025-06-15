@@ -55,9 +55,9 @@ const FamiliesPage = () => {
   const grouped = useMemo(() => {
     const map: Record<string, typeof plants> = {};
     plants.forEach((plant) => {
-      if (!plant.family_name) return;
-      if (!map[plant.family_name]) map[plant.family_name] = [];
-      map[plant.family_name].push(plant);
+      if (!plant.family) return;
+      if (!map[plant.family]) map[plant.family] = [];
+      map[plant.family].push(plant);
     });
     return map;
   }, [plants]);

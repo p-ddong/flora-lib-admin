@@ -52,3 +52,12 @@ export const deletePlantById = async (id: string, token: string) => {
   return res.data;
 };
 
+// ✅ Create new plant
+export const createPlant = async (data: PlantDetail, token: string) => {
+  const res = await axiosInstance.post("/plants/create", data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};

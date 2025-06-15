@@ -135,7 +135,7 @@ export const PlantDetailClient = ({ id }: Props) => {
       <div>
         <h1 className="text-3xl font-bold">{plant.scientific_name}</h1>
         <p className="text-muted-foreground text-lg">
-          {plant.common_name.join(", ")} • {plant.family_name}
+          {plant.common_name.join(", ")} • {plant.family.name}
         </p>
       </div>
 
@@ -148,7 +148,7 @@ export const PlantDetailClient = ({ id }: Props) => {
           <h2 className="text-xl font-semibold">Attributes</h2>
           <ul className="list-disc list-inside text-sm">
             {plant.attributes.map((attr, idx) => (
-              <li key={idx}>{attr}</li>
+              <li key={idx}>{attr.name}</li>
             ))}
           </ul>
         </div>

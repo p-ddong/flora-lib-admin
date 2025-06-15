@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
   Pencil,
   Trash,
 } from "lucide-react";
@@ -71,14 +70,12 @@ export function PlantDetailView({ id }: PlantDetailViewProps) {
     setCurrentImageIndex(0);
   }, [plant?.images]);
 
-  /* •••─── UI states ───••• */
+  /* UI states*/
   if (loading) return <p className="py-10 text-center">Đang tải dữ liệu…</p>;
   if (error)
     return <p className="py-10 text-center text-destructive">{error}</p>;
   if (!plant)
     return <p className="py-10 text-center italic">Không tìm thấy cây.</p>;
-
-  /* ——— Sau đoạn guard ở trên, từ đây `plant` chắc chắn có giá trị ——— */
 
   /* an toàn cho mảng ảnh rỗng */
   const images = plant.images?.length
@@ -198,7 +195,7 @@ export function PlantDetailView({ id }: PlantDetailViewProps) {
                 <h3 className="text-lg font-semibold mb-2">Taxonomy</h3>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
                   <dt className="text-muted-foreground">Family:</dt>
-                  <dd className="font-medium">{plant.family_name}</dd>
+                  <dd className="font-medium">{plant.family.name}</dd>
                   <dt className="text-muted-foreground">Scientific Name:</dt>
                   <dd className="font-medium italic">
                     {plant.scientific_name}
@@ -211,25 +208,11 @@ export function PlantDetailView({ id }: PlantDetailViewProps) {
                 <div className="flex flex-wrap gap-2">
                   {plant.attributes.map((a, i) => (
                     <Badge key={i} variant="outline" className="bg-primary/10">
-                      {a}
+                      {a.name}
                     </Badge>
                   ))}
                 </div>
               </section>
-
-              <Button variant="outline" size="sm" className="w-full" asChild>
-                <a
-                  href={`https://en.wikipedia.org/wiki/${encodeURIComponent(
-                    plant.scientific_name
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center"
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View on Wikipedia
-                </a>
-              </Button>
             </CardContent>
           </Card>
         </div>

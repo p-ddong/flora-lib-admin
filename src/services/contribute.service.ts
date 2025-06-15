@@ -11,3 +11,25 @@ export const fetchContributeList = async (token: string): Promise<Contribution[]
   });
   return res.data;
 };
+
+export const moderateContribute = async (
+  id: string,
+  payload: { action: "approved" | "rejected"; message: string },
+  token: string
+) => {
+  const res = await axiosInstance.post(`/contributes/moderate/${id}`, payload, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};
+
+export const fetchContributeDetail = async (id: string, token: string) => {
+  const res = await axiosInstance.get(`/contributes/detail/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};

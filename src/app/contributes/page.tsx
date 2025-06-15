@@ -2,7 +2,6 @@
 
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-
 import {
   Table,
   TableBody,
@@ -29,16 +28,23 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Contribution } from "@/types";
+
+const PAGE_SIZE = 10;
 
 const ContributesPage = () => {
-  const contributions = useSelector((state: RootState) => state.contribute.list);
+  const contributions = useSelector(
+    (state: RootState) => state.contribute.list
+  );
+
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [sortAsc, setSortAsc] = useState(true);
+  const [sortAsc, setSortAsc] = useState(false); // mới nhất trước
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
-    let list = [...contributions];
+    let list: Contribution[] = [...contributions];
 
     if (selectedStatus) {
       list = list.filter((c) => c.status === selectedStatus);
@@ -62,16 +68,26 @@ const ContributesPage = () => {
     return list;
   }, [contributions, selectedStatus, search, sortAsc]);
 
+  const paged = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+
   return (
-    <div className="p-6 space-y-6 h-screen overflow-y-auto">
-      <h1 className="text-2xl font-bold">Contributes</h1>
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Contributions</h1>
 
       {/* Filter & Search */}
       <div className="flex items-center gap-4 flex-wrap">
         <Input
           placeholder="Search by user or scientific name..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setPage(1);
+            setSearch(e.target.value);
+          }}
           className="max-w-sm"
         />
 
@@ -83,7 +99,7 @@ const ContributesPage = () => {
               className="min-w-[200px] justify-between"
             >
               {selectedStatus || "Filter by Status"}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[200px] p-0">
@@ -138,16 +154,28 @@ const ContributesPage = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.map((c) => (
+          {paged.map((c) => (
             <TableRow key={c._id}>
               <TableCell>{c.c_user.username}</TableCell>
               <TableCell>{c.data.plant.scientific_name}</TableCell>
               <TableCell className="capitalize">{c.type}</TableCell>
-              <TableCell className="capitalize">{c.status}</TableCell>
-              <TableCell>{format(new Date(c.createdAt), "dd/MM/yyyy HH:mm")}</TableCell>
+              <TableCell
+                className={`capitalize font-semibold ${
+                  c.status === "approved"
+                    ? "text-green-600"
+                    : c.status === "rejected"
+                    ? "text-red-600"
+                    : "text-yellow-600"
+                }`}
+              >
+                {c.status}
+              </TableCell>
+              <TableCell>
+                {format(new Date(c.createdAt), "dd/MM/yyyy HH:mm")}
+              </TableCell>
               <TableCell className="text-right space-x-2">
                 <Button asChild variant="ghost" size="icon">
-                  <Link href={`/contributes/view/${c._id}`}>
+                  <Link href={`/contributes/${c._id}`}>
                     <Eye className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -166,9 +194,29 @@ const ContributesPage = () => {
           ))}
         </TableBody>
       </Table>
+
+      {/* Pagination controls */}
+      <div className="flex justify-end items-center gap-2 pt-4">
+        <Button
+          variant="outline"
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          Previous
+        </Button>
+        <span>
+          Page {page} / {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          disabled={page === totalPages}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 };
 
 export default ContributesPage;
-
