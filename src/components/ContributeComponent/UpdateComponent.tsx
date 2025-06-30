@@ -18,6 +18,7 @@ import {
   User,
   Calendar,
   MessageSquare,
+  Loader2,
 } from "lucide-react";
 import {
   Contribution,
@@ -26,9 +27,20 @@ import {
   SpeciesSection,
 } from "@/types";
 import { useParams } from "next/navigation";
-import { fetchContributeDetail } from "@/services/contribute.service";
+import {
+  fetchContributeDetail,
+  moderateContribute,
+} from "@/services/contribute.service";
 import { getPlantDetailById } from "@/services/plant.service";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Textarea } from "../ui/textarea";
 // Utility functions
 const getStatusColor = (status: ContributionStatus) => {
   switch (status) {
@@ -101,6 +113,11 @@ export default function UpdateComponent() {
   const [originalPlant, setOriginalPlant] = useState<PlantDetail | null>(null);
   const [selectedTab, setSelectedTab] = useState("comparison");
 
+  //  moderation state
+  const [submitting, setSubmitting] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectMsg, setRejectMsg] = useState("");
+
   useEffect(() => {
     const fetchData = async () => {
       const localToken = localStorage.getItem("token");
@@ -149,7 +166,46 @@ export default function UpdateComponent() {
 
     return false;
   };
+  // ---------- handlers ----------
+  const handleApprove = async () => {
+    if (!contribution) return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    setSubmitting(true);
+    try {
+      const res = await moderateContribute(
+        contribution._id,
+        { action: "approved", message: "" },
+        token
+      );
+      setContribution(res); // API trả về bản ghi đã cập nhật
+    } catch (err) {
+      console.error("Approve failed", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
+  const handleReject = async () => {
+    if (!contribution) return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    setSubmitting(true);
+    try {
+      const res = await moderateContribute(
+        contribution._id,
+        { action: "rejected", message: rejectMsg },
+        token
+      );
+      setContribution(res);
+      setRejectOpen(false);
+      setRejectMsg("");
+    } catch (err) {
+      console.error("Reject failed", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
   if (!contribution || !originalPlant) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -455,8 +511,7 @@ export default function UpdateComponent() {
                       <h4 className="font-medium">
                         New Images ({contribution.data.new_images.length})
                       </h4>
-                      {contribution.data.new_images.length >0
-                         && (
+                      {contribution.data.new_images.length > 0 && (
                         <DiffBadge type="added" />
                       )}
                     </div>
@@ -554,20 +609,111 @@ export default function UpdateComponent() {
               variant="outline"
               size="lg"
               className="border-red-200 text-red-700 hover:bg-red-50"
+              onClick={() => setRejectOpen(true)}
+              disabled={submitting}
             >
-              <XCircle className="w-5 h-5 mr-2" />
+              {submitting ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <XCircle className="w-5 h-5 mr-2" />
+              )}
               Reject Contribution
             </Button>
+
             <Button
               size="lg"
               className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleApprove}
+              disabled={submitting}
             >
-              <CheckCircle className="w-5 h-5 mr-2" />
-              Approve & Publish
+              {submitting ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="w-5 h-5 mr-2" />
+              )}
+              Approve &amp; Publish
             </Button>
           </div>
         )}
 
+        {contribution.status !== "pending" && (
+          <div className="mt-8">
+            <Card
+              className={`border-2 ${
+                contribution.status === "approved"
+                  ? "border-green-300 bg-green-50"
+                  : "border-red-300 bg-red-50"
+              }`}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-center gap-3">
+                  {contribution.status === "approved" ? (
+                    <>
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                      <span className="text-lg font-semibold text-green-800">
+                        This contribution has been approved and published
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-6 h-6 text-red-600" />
+                      <span className="text-lg font-semibold text-red-800">
+                        This contribution has been rejected
+                      </span>
+                    </>
+                  )}
+                </div>
+                {contribution.review_message && (
+                  <div className="mt-4 p-3 bg-white rounded border">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Review message:</span>{" "}
+                      {contribution.review_message}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reject Contribution</DialogTitle>
+              <DialogDescription>
+                Vui lòng ghi rõ lý do từ chối để contributor có thể điều chỉnh.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Textarea
+              value={rejectMsg}
+              onChange={(e) => setRejectMsg(e.target.value)}
+              placeholder="Enter rejection reason…"
+              rows={4}
+            />
+
+            <DialogFooter className="mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setRejectOpen(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleReject}
+                disabled={submitting || rejectMsg.trim().length === 0}
+              >
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <XCircle className="w-4 h-4 mr-2" />
+                )}
+                Reject
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <TabsContent value="details" className="mt-6">
           <Card>
             <CardHeader>

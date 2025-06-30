@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { RootState } from "@/store";
 import { jwtDecode } from "jwt-decode";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Flower2, Users, GitBranch, Eye, Plus } from "lucide-react";
+import { Flower2, Users, GitBranch } from "lucide-react";
 import { setUser } from "@/store/authSlice";
 import { setPlantList, setPlantLoading } from "@/store/plantSlice";
 import { fetchPlantList } from "@/services/plant.service";
@@ -145,9 +145,7 @@ export default function PlantDashboard() {
           <h1 className="text-2xl font-bold">Plant Management Dashboard</h1>
           <p className="text-muted-foreground">Overview of your plant system</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" /> Add Plant
-        </Button>
+
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -246,7 +244,7 @@ export default function PlantDashboard() {
                     <TableHead>Plant Name</TableHead>
                     <TableHead>Family</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
+                    {/* <TableHead>Actions</TableHead> */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -257,11 +255,11 @@ export default function PlantDashboard() {
                       <TableCell>
                         {new Date(p.createdAt).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>
+                      {/* <TableCell>
                         <Button variant="ghost" size="icon">
                           <Eye className="w-4 h-4" />
                         </Button>
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   ))}
                 </TableBody>

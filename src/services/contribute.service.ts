@@ -17,7 +17,7 @@ export const moderateContribute = async (
   payload: { action: "approved" | "rejected"; message: string },
   token: string
 ) => {
-  const res = await axiosInstance.post(`/contributes/moderate/${id}`, payload, {
+  const res = await axiosInstance.patch(`/contributes/moderate/${id}`, payload, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
