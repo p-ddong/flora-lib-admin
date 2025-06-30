@@ -6,11 +6,19 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { CheckCircle, XCircle, AlertCircle, Eye, User, Calendar, MessageSquare, Plus } from "lucide-react"
+import { CheckCircle, XCircle, AlertCircle, Eye, User, Calendar, MessageSquare, Plus, Loader2 } from "lucide-react"
 import type { Contribution, ContributionStatus } from "@/types"
 import { useParams } from "next/navigation"
-import { fetchContributeDetail } from "@/services/contribute.service"
-
+import { fetchContributeDetail,moderateContribute } from "@/services/contribute.service"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Textarea } from "../ui/textarea"
 // Utility functions
 const getStatusColor = (status: ContributionStatus) => {
   switch (status) {
@@ -42,28 +50,73 @@ const NewBadge = () => (
 )
 
 export default function CreateContributionView() {
-  const { id } = useParams()
+ const { id } = useParams()
   const [contribution, setContribution] = useState<Contribution | null>(null)
   const [loading, setLoading] = useState(true)
 
+  //  moderation state
+  const [submitting, setSubmitting] = useState(false)
+  const [rejectOpen, setRejectOpen] = useState(false)
+  const [rejectMsg, setRejectMsg] = useState("")
+
+  // ---------- fetch ----------
   useEffect(() => {
     const fetchData = async () => {
       const localToken = localStorage.getItem("token")
       if (!localToken || typeof id !== "string") return
 
       try {
-        const contributionData = await fetchContributeDetail(id, localToken)
-        setContribution(contributionData)
-        console.log("contributionData :", contributionData)
-      } catch (error) {
-        console.error("Failed to fetch contribution", error)
+        const data = await fetchContributeDetail(id, localToken)
+        setContribution(data)
+      } catch (err) {
+        console.error("Failed to fetch contribution", err)
       } finally {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [id])
+
+  // ---------- handlers ----------
+  const handleApprove = async () => {
+    if (!contribution) return
+    const token = localStorage.getItem("token")
+    if (!token) return
+    setSubmitting(true)
+    try {
+      const res = await moderateContribute(
+        contribution._id,
+        { action: "approved", message: "" },
+        token,
+      )
+      setContribution(res) // API trả về bản ghi đã cập nhật
+    } catch (err) {
+      console.error("Approve failed", err)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!contribution) return
+    const token = localStorage.getItem("token")
+    if (!token) return
+    setSubmitting(true)
+    try {
+      const res = await moderateContribute(
+        contribution._id,
+        { action: "rejected", message: rejectMsg },
+        token,
+      )
+      setContribution(res)
+      setRejectOpen(false)
+      setRejectMsg("")
+    } catch (err) {
+      console.error("Reject failed", err)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -312,18 +365,39 @@ export default function CreateContributionView() {
       </Card>
 
       {/* Action Buttons */}
-      {contribution.status === "pending" && (
+ {contribution.status === "pending" && (
         <div className="flex justify-center gap-4 mt-8">
-          <Button variant="outline" size="lg" className="border-red-200 text-red-700 hover:bg-red-50">
-            <XCircle className="w-5 h-5 mr-2" />
+          <Button
+            variant="outline"
+            size="lg"
+            className="border-red-200 text-red-700 hover:bg-red-50"
+            onClick={() => setRejectOpen(true)}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <XCircle className="w-5 h-5 mr-2" />
+            )}
             Reject Contribution
           </Button>
-          <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white">
-            <CheckCircle className="w-5 h-5 mr-2" />
-            Approve & Publish
+
+          <Button
+            size="lg"
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleApprove}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <CheckCircle className="w-5 h-5 mr-2" />
+            )}
+            Approve &amp; Publish
           </Button>
         </div>
       )}
+
 
       {/* Status Message */}
       {contribution.status !== "pending" && (
@@ -360,6 +434,46 @@ export default function CreateContributionView() {
           </Card>
         </div>
       )}
+
+       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Contribution</DialogTitle>
+            <DialogDescription>
+              Vui lòng ghi rõ lý do từ chối để contributor có thể điều chỉnh.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Textarea
+            value={rejectMsg}
+            onChange={(e) => setRejectMsg(e.target.value)}
+            placeholder="Enter rejection reason…"
+            rows={4}
+          />
+
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setRejectOpen(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleReject}
+              disabled={submitting || rejectMsg.trim().length === 0}
+            >
+              {submitting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <XCircle className="w-4 h-4 mr-2" />
+              )}
+              Reject
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

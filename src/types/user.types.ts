@@ -14,6 +14,7 @@ export interface User2 {
   createdAt: string;
   updatedAt: string;
   __v?: number;
+  is_banned:boolean;
 }
 
 export type UserList = User2[];

@@ -24,6 +24,17 @@ export const updateUser = async (
   return res.data;
 };
 
+export const toggleBanUser = async (
+  id: string,
+  payload: { is_banned: boolean }, // true = ban, false = un-ban
+  token: string,
+) => {
+  const res = await axiosInstance.patch(`/users/update/${id}`, payload, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return res.data                    // trả về user đã cập nhật
+}
+
 export const deleteUser = async (id: string, token: string) => {
   const res = await axiosInstance.delete(`/users/delete/${id}`, {
     headers: {
